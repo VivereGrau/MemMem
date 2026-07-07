@@ -9,10 +9,11 @@ interface WordItemProps {
   meaning: string;
   wordType?: string;
   source: string;
+  badgeText?: string;
   onPress?: () => void;
 }
 
-export function WordItem({ id, word, reading, meaning, wordType, source, onPress }: WordItemProps) {
+export function WordItem({ id, word, reading, meaning, wordType, source, badgeText, onPress }: WordItemProps) {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
 
@@ -39,7 +40,14 @@ export function WordItem({ id, word, reading, meaning, wordType, source, onPress
           </View>
         </View>
         <View style={styles.rightSection}>
-          <ThemedText style={styles.meaning} type="default">{meaning}</ThemedText>
+          <View style={{ alignItems: 'flex-end', gap: 4 }}>
+            {!!badgeText && (
+              <View style={[styles.badgeContainer, { backgroundColor: isDark ? '#333' : '#E5E5EA' }]}>
+                <Text style={{ fontSize: 10, color: isDark ? '#E5E5EA' : '#48484A', fontWeight: 'bold' }} numberOfLines={1}>{badgeText}</Text>
+              </View>
+            )}
+            <ThemedText style={styles.meaning} type="default">{meaning}</ThemedText>
+          </View>
         </View>
       </View>
       
@@ -107,6 +115,12 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     alignItems: 'center',
     gap: 8,
+  },
+  badgeContainer: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    maxWidth: 120,
   },
   sourceBox: {
     marginTop: 12,

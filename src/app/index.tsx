@@ -1,25 +1,48 @@
-import React, { useState, useCallback } from 'react';
-import { FlatList, StyleSheet, View, Text, TouchableOpacity, Modal, TextInput, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from 'expo-router';
-import { useRouter } from 'expo-router';
-import * as DocumentPicker from 'expo-document-picker';
-import * as FileSystem from 'expo-file-system/legacy';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from "@expo/vector-icons";
+import * as DocumentPicker from "expo-document-picker";
+import * as FileSystem from "expo-file-system/legacy";
+import { useFocusEffect, useRouter } from "expo-router";
+import React, { useCallback, useState } from "react";
+import {
+  Alert,
+  FlatList,
+  Modal,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import { getManifest, saveManifest, ManifestEntry, generateUUID } from '@/utils/storage';
-import { VocabCard } from '@/components/vocab-card';
-import { ThemedText } from '@/components/themed-text';
-import { Spacing } from '@/constants/theme';
-import { useColorScheme } from 'react-native';
+import { ThemedText } from "@/components/themed-text";
+import { VocabCard } from "@/components/vocab-card";
+import { WordItem } from "@/components/word-item";
+import { Spacing } from "@/constants/theme";
+import {
+  generateUUID,
+  getManifest,
+  getVocabSet,
+  ManifestEntry,
+  saveManifest,
+  VocabEntry,
+} from "@/utils/storage";
+import { useColorScheme } from "react-native";
+
+interface GlobalWord extends VocabEntry {
+  setId: string;
+  setTitle: string;
+}
 
 export default function HomeScreen() {
   const [manifest, setManifest] = useState<ManifestEntry[]>([]);
+  const [allWords, setAllWords] = useState<GlobalWord[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [isModalVisible, setModalVisible] = useState(false);
-  const [newTitle, setNewTitle] = useState('');
+  const [newTitle, setNewTitle] = useState("");
   const router = useRouter();
   const scheme = useColorScheme();
-  const isDark = scheme === 'dark';
+  const isDark = scheme === "dark";
 
   useFocusEffect(
     useCallback(() => {
@@ -29,20 +52,37 @@ export default function HomeScreen() {
         if (isActive) {
           setManifest(data);
         }
+
+        try {
+          const globalWordsList: GlobalWord[] = [];
+          for (const m of data) {
+            const setWords = await getVocabSet(m.fileName);
+            for (const w of setWords) {
+              globalWordsList.push({ ...w, setId: m.id, setTitle: m.title });
+            }
+          }
+          if (isActive) {
+            setAllWords(globalWordsList);
+          }
+        } catch (e) {
+          console.error("Error fetching global words:", e);
+        }
       };
       fetchManifest();
-      return () => { isActive = false; };
-    }, [])
+      return () => {
+        isActive = false;
+      };
+    }, []),
   );
 
   const handleCreateSet = async () => {
     if (!newTitle.trim()) {
-      Alert.alert('Error', 'Please enter a title for the vocabulary set.');
+      Alert.alert("Error", "Please enter a title for the vocabulary set.");
       return;
     }
     const newId = generateUUID();
     const fileName = `set_${newId}.json`;
-    
+
     // Create new empty set file
     const fileUri = `${FileSystem.documentDirectory}${fileName}`;
     await FileSystem.writeAsStringAsync(fileUri, JSON.stringify([]));
@@ -59,8 +99,8 @@ export default function HomeScreen() {
     await saveManifest(updatedManifest);
     setManifest(updatedManifest);
     setModalVisible(false);
-    setNewTitle('');
-    
+    setNewTitle("");
+
     // Auto navigate to the newly created set
     router.push(`/vocab/${newId}` as any);
   };
@@ -68,7 +108,7 @@ export default function HomeScreen() {
   const handleImport = async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: 'application/json',
+        type: "application/json",
         copyToCacheDirectory: true,
       });
 
@@ -79,23 +119,29 @@ export default function HomeScreen() {
       const asset = result.assets[0];
       const content = await FileSystem.readAsStringAsync(asset.uri);
       const parsedData = JSON.parse(content);
-      
+
       // Basic validation
       if (!Array.isArray(parsedData)) {
-        Alert.alert('Invalid File', 'The imported file must contain an array of vocabulary words.');
+        Alert.alert(
+          "Invalid File",
+          "The imported file must contain an array of vocabulary words.",
+        );
         return;
       }
 
       const newId = generateUUID();
       const fileName = `set_${newId}.json`;
       const fileUri = `${FileSystem.documentDirectory}${fileName}`;
-      
+
       // Save imported file
-      await FileSystem.writeAsStringAsync(fileUri, JSON.stringify(parsedData, null, 2));
+      await FileSystem.writeAsStringAsync(
+        fileUri,
+        JSON.stringify(parsedData, null, 2),
+      );
 
       const newEntry: ManifestEntry = {
         id: newId,
-        title: asset.name.replace('.json', '') || 'Imported Set',
+        title: asset.name.replace(".json", "") || "Imported Set",
         fileName: fileName,
         totalWords: parsedData.length,
         updatedAt: new Date().toISOString(),
@@ -104,75 +150,178 @@ export default function HomeScreen() {
       const updatedManifest = [...manifest, newEntry];
       await saveManifest(updatedManifest);
       setManifest(updatedManifest);
-      
-      Alert.alert('Success', `Imported ${parsedData.length} words successfully!`);
+
+      Alert.alert(
+        "Success",
+        `Imported ${parsedData.length} words successfully!`,
+      );
     } catch (error) {
       console.error(error);
-      Alert.alert('Import Failed', 'There was an error reading the selected file.');
+      Alert.alert(
+        "Import Failed",
+        "There was an error reading the selected file.",
+      );
     }
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: isDark ? '#000' : '#f5f5f5' }]} edges={['top']}>
+    <SafeAreaView
+      style={[
+        styles.container,
+        { backgroundColor: isDark ? "#000" : "#f5f5f5" },
+      ]}
+      edges={["top"]}
+    >
       <View style={styles.header}>
-        <ThemedText type="title" style={styles.title}>Vocab Sets</ThemedText>
+        <ThemedText type="title" style={styles.title}>
+          Vocab Sets
+        </ThemedText>
         <TouchableOpacity style={styles.importBtn} onPress={handleImport}>
-          <Ionicons name="cloud-download-outline" size={24} color={isDark ? '#fff' : '#000'} />
+          <Ionicons
+            name="cloud-download-outline"
+            size={24}
+            color={isDark ? "#fff" : "#000"}
+          />
         </TouchableOpacity>
       </View>
 
-      <FlatList
-        data={manifest}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
-        renderItem={({ item }) => (
-          <VocabCard
-            title={item.title}
-            totalWords={item.totalWords}
-            onPress={() => router.push(`/vocab/${item.id}` as any)}
-          />
+      {/* Global Search Bar */}
+      <View
+        style={[
+          styles.searchContainer,
+          { backgroundColor: isDark ? "#1C1C1E" : "#E5E5EA" },
+        ]}
+      >
+        <Ionicons
+          name="search"
+          size={20}
+          color="#8E8E93"
+          style={styles.searchIcon}
+        />
+        <TextInput
+          style={[styles.searchInput, { color: isDark ? "#FFF" : "#000" }]}
+          placeholder="Search all vocabulary..."
+          placeholderTextColor="#8E8E93"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity
+            onPress={() => setSearchQuery("")}
+            style={styles.clearSearchBtn}
+          >
+            <Ionicons name="close-circle" size={16} color="#8E8E93" />
+          </TouchableOpacity>
         )}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <ThemedText type="default" style={styles.emptyText}>
-              No vocabulary sets yet. Create one or import a JSON file.
-            </ThemedText>
-          </View>
-        }
-      />
+      </View>
+
+      {searchQuery.length > 0 ? (
+        <FlatList
+          data={allWords.filter((item) => {
+            if (!searchQuery.trim()) return true;
+            const query = searchQuery.toLowerCase();
+            return (
+              item.word.toLowerCase().includes(query) ||
+              (item.reading && item.reading.toLowerCase().includes(query)) ||
+              item.meaning.toLowerCase().includes(query)
+            );
+          })}
+          keyExtractor={(item) => item.id + item.setId}
+          contentContainerStyle={styles.listContent}
+          renderItem={({ item }) => (
+            <WordItem
+              id={item.id}
+              word={item.word}
+              reading={item.reading}
+              meaning={item.meaning}
+              wordType={item.wordType}
+              source={item.source}
+              badgeText={item.setTitle}
+              onPress={() => router.push(`/vocab/${item.setId}` as any)}
+            />
+          )}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <ThemedText type="default" style={styles.emptyText}>
+                No matches found across all sets.
+              </ThemedText>
+            </View>
+          }
+        />
+      ) : (
+        <FlatList
+          data={manifest}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContent}
+          renderItem={({ item }) => (
+            <VocabCard
+              title={item.title}
+              totalWords={item.totalWords}
+              onPress={() => router.push(`/vocab/${item.id}` as any)}
+            />
+          )}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <ThemedText type="default" style={styles.emptyText}>
+                No vocabulary sets yet. Create one or import a JSON file.
+              </ThemedText>
+            </View>
+          }
+        />
+      )}
 
       {/* Floating Action Button */}
-      <TouchableOpacity 
-        style={styles.fab} 
+      <TouchableOpacity
+        style={styles.fab}
         activeOpacity={0.8}
-        onPress={() => setModalVisible(true)}>
+        onPress={() => setModalVisible(true)}
+      >
         <Ionicons name="add" size={32} color="#fff" />
       </TouchableOpacity>
 
       {/* Create Set Modal */}
       <Modal visible={isModalVisible} transparent animationType="fade">
         <View style={styles.modalBackground}>
-          <View style={[styles.modalContainer, { backgroundColor: isDark ? '#1a1a1a' : '#fff' }]}>
-            <ThemedText type="subtitle" style={styles.modalTitle}>Create New Set</ThemedText>
-            
+          <View
+            style={[
+              styles.modalContainer,
+              { backgroundColor: isDark ? "#1a1a1a" : "#fff" },
+            ]}
+          >
+            <ThemedText type="subtitle" style={styles.modalTitle}>
+              Create New Set
+            </ThemedText>
+
             <TextInput
-              style={[styles.input, { color: isDark ? '#fff' : '#000', borderColor: isDark ? '#333' : '#ccc' }]}
+              style={[
+                styles.input,
+                {
+                  color: isDark ? "#fff" : "#000",
+                  borderColor: isDark ? "#333" : "#ccc",
+                },
+              ]}
               placeholder="e.g. JLPT N3 Verbs"
-              placeholderTextColor={isDark ? '#888' : '#aaa'}
+              placeholderTextColor={isDark ? "#888" : "#aaa"}
               value={newTitle}
               onChangeText={setNewTitle}
               autoFocus
             />
 
             <View style={styles.modalActions}>
-              <TouchableOpacity style={styles.cancelBtn} onPress={() => {
-                setModalVisible(false);
-                setNewTitle('');
-              }}>
+              <TouchableOpacity
+                style={styles.cancelBtn}
+                onPress={() => {
+                  setModalVisible(false);
+                  setNewTitle("");
+                }}
+              >
                 <Text style={styles.cancelBtnText}>Cancel</Text>
               </TouchableOpacity>
-              
-              <TouchableOpacity style={styles.createBtn} onPress={handleCreateSet}>
+
+              <TouchableOpacity
+                style={styles.createBtn}
+                onPress={handleCreateSet}
+              >
                 <Text style={styles.createBtnText}>Create</Text>
               </TouchableOpacity>
             </View>
@@ -188,9 +337,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: Spacing.four,
     paddingVertical: 16,
   },
@@ -201,31 +350,50 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   listContent: {
-    paddingHorizontal: Spacing.four,
+    padding: Spacing.four,
     paddingBottom: 100,
-    paddingTop: 8,
+  },
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginHorizontal: 16,
+    marginBottom: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    padding: 0,
+  },
+  clearSearchBtn: {
+    padding: 4,
   },
   emptyContainer: {
     padding: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginTop: 64,
   },
   emptyText: {
-    textAlign: 'center',
+    textAlign: "center",
     opacity: 0.6,
   },
   fab: {
-    position: 'absolute',
-    bottom: 32,
+    position: "absolute",
+    bottom: 54,
     right: 24,
-    backgroundColor: '#0274DF',
+    backgroundColor: "#0274DF",
     width: 64,
     height: 64,
     borderRadius: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#0274DF',
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#0274DF",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -233,16 +401,16 @@ const styles = StyleSheet.create({
   },
   modalBackground: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
     padding: 24,
   },
   modalContainer: {
-    width: '100%',
+    width: "100%",
     borderRadius: 20,
     padding: 24,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.25,
     shadowRadius: 10,
@@ -259,30 +427,30 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   modalActions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
+    flexDirection: "row",
+    justifyContent: "flex-end",
     gap: 12,
   },
   cancelBtn: {
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 12,
-    backgroundColor: 'transparent',
+    backgroundColor: "transparent",
   },
   cancelBtnText: {
-    color: '#888',
+    color: "#888",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   createBtn: {
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 12,
-    backgroundColor: '#0274DF',
+    backgroundColor: "#0274DF",
   },
   createBtnText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });
