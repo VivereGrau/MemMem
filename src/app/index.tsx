@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
 import * as FileSystem from "expo-file-system/legacy";
 import { useFocusEffect, useRouter } from "expo-router";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useState, useMemo } from "react";
 import {
   Alert,
   FlatList,
@@ -211,15 +211,15 @@ export default function HomeScreen() {
     executeImport(trimmed, importFileData);
   };
 
-  const getSortedManifest = () => {
+  const sortedManifest = useMemo(() => {
     return [...manifest].sort((a, b) => {
       const timeA = new Date(a.updatedAt || 0).getTime();
       const timeB = new Date(b.updatedAt || 0).getTime();
       return sortOrder === "newest" ? timeB - timeA : timeA - timeB;
     });
-  };
+  }, [manifest, sortOrder]);
 
-  const getSortedWords = () => {
+  const sortedWords = useMemo(() => {
     const filtered = allWords.filter((item) => {
       if (!searchQuery.trim()) return true;
       const query = searchQuery.toLowerCase();
@@ -231,7 +231,7 @@ export default function HomeScreen() {
     });
     // For global search, we just reverse the array based on sortOrder
     return sortOrder === "newest" ? filtered : [...filtered].reverse();
-  };
+  }, [allWords, searchQuery, sortOrder]);
 
   return (
     <SafeAreaView
@@ -316,9 +316,12 @@ export default function HomeScreen() {
 
       {searchQuery.length > 0 ? (
         <FlatList
-          data={getSortedWords()}
+          data={sortedWords}
           keyExtractor={(item) => item.id + item.setId}
           contentContainerStyle={styles.listContent}
+          initialNumToRender={15}
+          windowSize={5}
+          maxToRenderPerBatch={10}
           renderItem={({ item }) => (
             <WordItem
               id={item.id}
@@ -341,9 +344,12 @@ export default function HomeScreen() {
         />
       ) : (
         <FlatList
-          data={getSortedManifest()}
+          data={sortedManifest}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}
+          initialNumToRender={15}
+          windowSize={5}
+          maxToRenderPerBatch={10}
           renderItem={({ item }) => (
             <VocabCard
               title={item.title}

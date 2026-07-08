@@ -2,6 +2,8 @@ import { StyleSheet, View, TouchableOpacity, Alert, Text } from 'react-native';
 import { ThemedText } from './themed-text';
 import { useColorScheme } from 'react-native';
 
+import React from 'react';
+
 interface WordItemProps {
   id?: string;
   word: string;
@@ -13,7 +15,7 @@ interface WordItemProps {
   onPress?: () => void;
 }
 
-export function WordItem({ id, word, reading, meaning, wordType, source, badgeText, onPress }: WordItemProps) {
+export const WordItem = React.memo(function WordItem({ id, word, reading, meaning, wordType, source, badgeText, onPress }: WordItemProps) {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
 
@@ -58,7 +60,16 @@ export function WordItem({ id, word, reading, meaning, wordType, source, badgeTe
       )}
     </TouchableOpacity>
   );
-}
+}, (prevProps, nextProps) => {
+  return (
+    prevProps.word === nextProps.word &&
+    prevProps.reading === nextProps.reading &&
+    prevProps.meaning === nextProps.meaning &&
+    prevProps.wordType === nextProps.wordType &&
+    prevProps.source === nextProps.source &&
+    prevProps.badgeText === nextProps.badgeText
+  );
+});
 
 const styles = StyleSheet.create({
   container: {

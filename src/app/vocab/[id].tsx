@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as FileSystem from "expo-file-system/legacy";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import * as Sharing from "expo-sharing";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState, useMemo } from "react";
 import {
   Alert,
   Animated,
@@ -434,6 +434,19 @@ export default function VocabScreen() {
     }
   };
 
+  const sortedVocabData = useMemo(() => {
+    const filtered = vocabData.filter((item) => {
+      if (!searchQuery.trim()) return true;
+      const query = searchQuery.toLowerCase();
+      return (
+        item.word.toLowerCase().includes(query) ||
+        (item.reading && item.reading.toLowerCase().includes(query)) ||
+        item.meaning.toLowerCase().includes(query)
+      );
+    });
+    return sortOrder === "newest" ? filtered : [...filtered].reverse();
+  }, [vocabData, searchQuery, sortOrder]);
+
   return (
     <SafeAreaView
       style={[
@@ -547,20 +560,12 @@ export default function VocabScreen() {
 
       {/* Vocab List */}
       <FlatList
-        data={(() => {
-          const filtered = vocabData.filter((item) => {
-            if (!searchQuery.trim()) return true;
-            const query = searchQuery.toLowerCase();
-            return (
-              item.word.toLowerCase().includes(query) ||
-              (item.reading && item.reading.toLowerCase().includes(query)) ||
-              item.meaning.toLowerCase().includes(query)
-            );
-          });
-          return sortOrder === "newest" ? filtered : [...filtered].reverse();
-        })()}
+        data={sortedVocabData}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
+        initialNumToRender={15}
+        windowSize={5}
+        maxToRenderPerBatch={10}
         renderItem={({ item }) => (
           <WordItem
             id={item.id}

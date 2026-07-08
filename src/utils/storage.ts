@@ -10,6 +10,14 @@ export function generateUUID(): string {
     return v.toString(16);
   });
 }
+
+/**
+ * Sanitizes a file name to prevent path traversal attacks.
+ */
+export function sanitizeFileName(name: string): string {
+  return name.replace(/[^a-zA-Z0-9_.-]/g, '');
+}
+
 const MANIFEST_FILE_NAME = 'manifest.json';
 const MANIFEST_URI = `${FileSystem.documentDirectory}${MANIFEST_FILE_NAME}`;
 
@@ -77,7 +85,8 @@ export async function saveManifest(data: ManifestEntry[]): Promise<void> {
  * @param fileName fileName of the vocab set (e.g. set_1234.json)
  */
 export async function getVocabSet(fileName: string): Promise<VocabEntry[]> {
-  const uri = `${FileSystem.documentDirectory}${fileName}`;
+  const safeFileName = sanitizeFileName(fileName);
+  const uri = `${FileSystem.documentDirectory}${safeFileName}`;
   try {
     const fileInfo = await FileSystem.getInfoAsync(uri);
     if (!fileInfo.exists) {
@@ -98,7 +107,8 @@ export async function getVocabSet(fileName: string): Promise<VocabEntry[]> {
  * @param data Array of vocab entries
  */
 export async function saveVocabSet(fileName: string, data: VocabEntry[]): Promise<void> {
-  const uri = `${FileSystem.documentDirectory}${fileName}`;
+  const safeFileName = sanitizeFileName(fileName);
+  const uri = `${FileSystem.documentDirectory}${safeFileName}`;
   try {
     await FileSystem.writeAsStringAsync(uri, JSON.stringify(data, null, 2));
   } catch (error) {
@@ -112,7 +122,8 @@ export async function saveVocabSet(fileName: string, data: VocabEntry[]): Promis
  * @param fileName fileName of the vocab set to delete
  */
 export async function deleteVocabSet(fileName: string): Promise<void> {
-  const uri = `${FileSystem.documentDirectory}${fileName}`;
+  const safeFileName = sanitizeFileName(fileName);
+  const uri = `${FileSystem.documentDirectory}${safeFileName}`;
   try {
     await FileSystem.deleteAsync(uri, { idempotent: true });
   } catch (error) {

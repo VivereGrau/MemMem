@@ -4,13 +4,15 @@ import { ThemedText } from './themed-text';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from 'react-native';
 
+import React from 'react';
+
 interface VocabCardProps {
   title: string;
   totalWords: number;
   onPress: () => void;
 }
 
-export function VocabCard({ title, totalWords, onPress }: VocabCardProps) {
+export const VocabCard = React.memo(function VocabCard({ title, totalWords, onPress }: VocabCardProps) {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
 
@@ -42,7 +44,9 @@ export function VocabCard({ title, totalWords, onPress }: VocabCardProps) {
       </BlurView>
     </TouchableOpacity>
   );
-}
+}, (prevProps, nextProps) => {
+  return prevProps.title === nextProps.title && prevProps.totalWords === nextProps.totalWords;
+});
 
 const styles = StyleSheet.create({
   cardContainer: {
