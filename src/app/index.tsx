@@ -245,13 +245,22 @@ export default function HomeScreen() {
         <ThemedText type="title" style={styles.title}>
           Collections
         </ThemedText>
-        <TouchableOpacity style={styles.importBtn} onPress={handleImport}>
-          <Ionicons
-            name="cloud-download-outline"
-            size={24}
-            color={isDark ? "#fff" : "#000"}
-          />
-        </TouchableOpacity>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+          <TouchableOpacity style={styles.headerIconBtn} onPress={handleImport}>
+            <Ionicons
+              name="cloud-download-outline"
+              size={26}
+              color={isDark ? "#fff" : "#000"}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.headerIconBtn} onPress={() => router.push('/settings')}>
+            <Ionicons
+              name="settings-outline"
+              size={26}
+              color={isDark ? "#fff" : "#000"}
+            />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Global Search Bar & Sort */}
@@ -482,7 +491,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
   },
-  importBtn: {
+  headerIconBtn: {
     padding: 8,
   },
   listContent: {
