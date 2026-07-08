@@ -15,9 +15,8 @@ export default function RootLayout() {
       const savedTheme = await getTheme();
       if (savedTheme !== 'system') {
         Appearance.setColorScheme(savedTheme);
-      } else {
-        Appearance.setColorScheme(null);
       }
+      // If it is 'system', we don't force any specific scheme. Calling setColorScheme(null) causes crashes on some RN builds.
       SplashScreen.hideAsync();
     }
     initSettings();
