@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import React from "react";
 import { Image, StyleSheet, TouchableOpacity, useColorScheme, View, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import Constants from "expo-constants";
 import { ThemedText } from "@/components/themed-text";
 
 export default function AboutScreen() {
@@ -35,7 +36,7 @@ export default function AboutScreen() {
           <ThemedText type="title" style={styles.appName}>
             MemMem
           </ThemedText>
-          <ThemedText style={styles.version}>Version 1.0.0</ThemedText>
+          <ThemedText style={styles.version}>Version {Constants.expoConfig?.version || "1.0.0"}</ThemedText>
         </View>
 
         <View style={[styles.card, { backgroundColor: isDark ? "#1C1C1E" : "#FFF" }]}>
