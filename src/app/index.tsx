@@ -38,6 +38,7 @@ export default function HomeScreen() {
   const [manifest, setManifest] = useState<ManifestEntry[]>([]);
   const [allWords, setAllWords] = useState<GlobalWord[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
   const [isModalVisible, setModalVisible] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const router = useRouter();
@@ -164,6 +165,28 @@ export default function HomeScreen() {
     }
   };
 
+  const getSortedManifest = () => {
+    return [...manifest].sort((a, b) => {
+      const timeA = new Date(a.updatedAt || 0).getTime();
+      const timeB = new Date(b.updatedAt || 0).getTime();
+      return sortOrder === "newest" ? timeB - timeA : timeA - timeB;
+    });
+  };
+
+  const getSortedWords = () => {
+    const filtered = allWords.filter((item) => {
+      if (!searchQuery.trim()) return true;
+      const query = searchQuery.toLowerCase();
+      return (
+        item.word.toLowerCase().includes(query) ||
+        (item.reading && item.reading.toLowerCase().includes(query)) ||
+        item.meaning.toLowerCase().includes(query)
+      );
+    });
+    // For global search, we just reverse the array based on sortOrder
+    return sortOrder === "newest" ? filtered : [...filtered].reverse();
+  };
+
   return (
     <SafeAreaView
       style={[
@@ -174,7 +197,7 @@ export default function HomeScreen() {
     >
       <View style={styles.header}>
         <ThemedText type="title" style={styles.title}>
-          Vocab Sets
+          Collections
         </ThemedText>
         <TouchableOpacity style={styles.importBtn} onPress={handleImport}>
           <Ionicons
@@ -185,47 +208,60 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Global Search Bar */}
-      <View
-        style={[
-          styles.searchContainer,
-          { backgroundColor: isDark ? "#1C1C1E" : "#E5E5EA" },
-        ]}
-      >
-        <Ionicons
-          name="search"
-          size={20}
-          color="#8E8E93"
-          style={styles.searchIcon}
-        />
-        <TextInput
-          style={[styles.searchInput, { color: isDark ? "#FFF" : "#000" }]}
-          placeholder="Search all vocabulary..."
-          placeholderTextColor="#8E8E93"
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-        {searchQuery.length > 0 && (
-          <TouchableOpacity
-            onPress={() => setSearchQuery("")}
-            style={styles.clearSearchBtn}
-          >
-            <Ionicons name="close-circle" size={16} color="#8E8E93" />
-          </TouchableOpacity>
-        )}
+      {/* Global Search Bar & Sort */}
+      <View style={styles.searchRow}>
+        <View
+          style={[
+            styles.searchContainer,
+            { backgroundColor: isDark ? "#1C1C1E" : "#E5E5EA" },
+          ]}
+        >
+          <Ionicons
+            name="search"
+            size={20}
+            color="#8E8E93"
+            style={styles.searchIcon}
+          />
+          <TextInput
+            style={[styles.searchInput, { color: isDark ? "#FFF" : "#000" }]}
+            placeholder="Search all vocabulary..."
+            placeholderTextColor="#8E8E93"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity
+              onPress={() => setSearchQuery("")}
+              style={styles.clearSearchBtn}
+            >
+              <Ionicons name="close-circle" size={16} color="#8E8E93" />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        <TouchableOpacity
+          style={[
+            styles.sortBtn,
+            { backgroundColor: isDark ? "#1C1C1E" : "#E5E5EA", flexDirection: "row", gap: 4 },
+          ]}
+          onPress={() => setSortOrder(prev => prev === "newest" ? "oldest" : "newest")}
+        >
+          <Ionicons
+            name="arrow-up"
+            size={18}
+            color={sortOrder === "oldest" ? "#0274DF" : (isDark ? "#555" : "#CCC")}
+          />
+          <Ionicons
+            name="arrow-down"
+            size={18}
+            color={sortOrder === "newest" ? "#0274DF" : (isDark ? "#555" : "#CCC")}
+          />
+        </TouchableOpacity>
       </View>
 
       {searchQuery.length > 0 ? (
         <FlatList
-          data={allWords.filter((item) => {
-            if (!searchQuery.trim()) return true;
-            const query = searchQuery.toLowerCase();
-            return (
-              item.word.toLowerCase().includes(query) ||
-              (item.reading && item.reading.toLowerCase().includes(query)) ||
-              item.meaning.toLowerCase().includes(query)
-            );
-          })}
+          data={getSortedWords()}
           keyExtractor={(item) => item.id + item.setId}
           contentContainerStyle={styles.listContent}
           renderItem={({ item }) => (
@@ -250,7 +286,7 @@ export default function HomeScreen() {
         />
       ) : (
         <FlatList
-          data={manifest}
+          data={getSortedManifest()}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}
           renderItem={({ item }) => (
@@ -353,14 +389,26 @@ const styles = StyleSheet.create({
     padding: Spacing.four,
     paddingBottom: 100,
   },
-  searchContainer: {
+  searchRow: {
     flexDirection: "row",
     alignItems: "center",
     marginHorizontal: 16,
     marginBottom: 8,
+  },
+  searchContainer: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderRadius: 10,
+  },
+  sortBtn: {
+    marginLeft: 8,
+    padding: 10,
+    borderRadius: 10,
+    justifyContent: "center",
+    alignItems: "center",
   },
   searchIcon: {
     marginRight: 8,

@@ -59,6 +59,7 @@ export default function VocabScreen() {
   const [vocabData, setVocabData] = useState<VocabEntry[]>([]);
   const [setTitle, setSetTitle] = useState("Vocab Set");
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
 
   // Modals state
   const [isModalVisible, setModalVisible] = useState(false);
@@ -433,47 +434,71 @@ export default function VocabScreen() {
         </View>
       </View>
 
-      {/* Search Bar */}
-      <View
-        style={[
-          styles.searchContainer,
-          { backgroundColor: isDark ? "#1C1C1E" : "#E5E5EA" },
-        ]}
-      >
-        <Ionicons
-          name="search"
-          size={20}
-          color="#8E8E93"
-          style={styles.searchIcon}
-        />
-        <TextInput
-          style={[styles.searchInput, { color: isDark ? "#FFF" : "#000" }]}
-          placeholder="Search vocabulary..."
-          placeholderTextColor="#8E8E93"
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-        {searchQuery.length > 0 && (
-          <TouchableOpacity
-            onPress={() => setSearchQuery("")}
-            style={styles.clearSearchBtn}
-          >
-            <Ionicons name="close-circle" size={16} color="#8E8E93" />
-          </TouchableOpacity>
-        )}
+      {/* Search Bar & Sort */}
+      <View style={styles.searchRow}>
+        <View
+          style={[
+            styles.searchContainer,
+            { backgroundColor: isDark ? "#1C1C1E" : "#E5E5EA" },
+          ]}
+        >
+          <Ionicons
+            name="search"
+            size={20}
+            color="#8E8E93"
+            style={styles.searchIcon}
+          />
+          <TextInput
+            style={[styles.searchInput, { color: isDark ? "#FFF" : "#000" }]}
+            placeholder="Search vocabulary..."
+            placeholderTextColor="#8E8E93"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity
+              onPress={() => setSearchQuery("")}
+              style={styles.clearSearchBtn}
+            >
+              <Ionicons name="close-circle" size={16} color="#8E8E93" />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        <TouchableOpacity
+          style={[
+            styles.sortBtn,
+            { backgroundColor: isDark ? "#1C1C1E" : "#E5E5EA", flexDirection: "row", gap: 4 },
+          ]}
+          onPress={() => setSortOrder(prev => prev === "newest" ? "oldest" : "newest")}
+        >
+          <Ionicons
+            name="arrow-up"
+            size={18}
+            color={sortOrder === "oldest" ? "#0274DF" : (isDark ? "#555" : "#CCC")}
+          />
+          <Ionicons
+            name="arrow-down"
+            size={18}
+            color={sortOrder === "newest" ? "#0274DF" : (isDark ? "#555" : "#CCC")}
+          />
+        </TouchableOpacity>
       </View>
 
       {/* Vocab List */}
       <FlatList
-        data={vocabData.filter((item) => {
-          if (!searchQuery.trim()) return true;
-          const query = searchQuery.toLowerCase();
-          return (
-            item.word.toLowerCase().includes(query) ||
-            (item.reading && item.reading.toLowerCase().includes(query)) ||
-            item.meaning.toLowerCase().includes(query)
-          );
-        })}
+        data={(() => {
+          const filtered = vocabData.filter((item) => {
+            if (!searchQuery.trim()) return true;
+            const query = searchQuery.toLowerCase();
+            return (
+              item.word.toLowerCase().includes(query) ||
+              (item.reading && item.reading.toLowerCase().includes(query)) ||
+              item.meaning.toLowerCase().includes(query)
+            );
+          });
+          return sortOrder === "newest" ? filtered : [...filtered].reverse();
+        })()}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         renderItem={({ item }) => (
@@ -873,15 +898,27 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 4,
   },
-  searchContainer: {
+  searchRow: {
     flexDirection: "row",
     alignItems: "center",
     marginHorizontal: 16,
     marginTop: 12,
     marginBottom: 12,
+  },
+  searchContainer: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderRadius: 10,
+  },
+  sortBtn: {
+    marginLeft: 8,
+    padding: 10,
+    borderRadius: 10,
+    justifyContent: "center",
+    alignItems: "center",
   },
   searchIcon: {
     marginRight: 8,
