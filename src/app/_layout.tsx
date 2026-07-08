@@ -1,8 +1,9 @@
 import { ThemeProvider, DarkTheme, DefaultTheme } from '@react-navigation/native';
 import * as SplashScreen from 'expo-splash-screen';
-import { useColorScheme } from 'react-native';
+import { useColorScheme, Appearance } from 'react-native';
 import { Stack } from 'expo-router';
 import { useEffect } from 'react';
+import { getTheme } from '@/utils/storage';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -10,7 +11,16 @@ export default function RootLayout() {
   const colorScheme = useColorScheme();
 
   useEffect(() => {
-    SplashScreen.hideAsync();
+    async function initSettings() {
+      const savedTheme = await getTheme();
+      if (savedTheme !== 'system') {
+        Appearance.setColorScheme(savedTheme);
+      } else {
+        Appearance.setColorScheme(null);
+      }
+      SplashScreen.hideAsync();
+    }
+    initSettings();
   }, []);
 
   return (

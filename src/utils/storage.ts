@@ -226,3 +226,22 @@ export async function updateVocabWord(setId: string, wordId: string, updatedData
     return { success: false };
   }
 }
+
+export type AppTheme = 'system' | 'light' | 'dark';
+
+export async function getTheme(): Promise<AppTheme> {
+  const uri = `${FileSystem.documentDirectory}theme.json`;
+  try {
+    const info = await FileSystem.getInfoAsync(uri);
+    if (!info.exists) return 'system';
+    const content = await FileSystem.readAsStringAsync(uri);
+    return JSON.parse(content).theme as AppTheme;
+  } catch {
+    return 'system';
+  }
+}
+
+export async function saveTheme(theme: AppTheme): Promise<void> {
+  const uri = `${FileSystem.documentDirectory}theme.json`;
+  await FileSystem.writeAsStringAsync(uri, JSON.stringify({ theme }));
+}
