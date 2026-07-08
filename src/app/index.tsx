@@ -40,7 +40,10 @@ export default function HomeScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
   const [isModalVisible, setModalVisible] = useState(false);
+  const [isImportModalVisible, setImportModalVisible] = useState(false);
   const [newTitle, setNewTitle] = useState("");
+  const [importTitle, setImportTitle] = useState("");
+  const [importFileData, setImportFileData] = useState<any>(null);
   const router = useRouter();
   const scheme = useColorScheme();
   const isDark = scheme === "dark";
@@ -130,32 +133,19 @@ export default function HomeScreen() {
         return;
       }
 
-      const newId = generateUUID();
-      const fileName = `set_${newId}.json`;
-      const fileUri = `${FileSystem.documentDirectory}${fileName}`;
+      const defaultTitle = (asset.name.replace(".json", "") || "Imported Set").replace(/_/g, " ");
 
-      // Save imported file
-      await FileSystem.writeAsStringAsync(
-        fileUri,
-        JSON.stringify(parsedData, null, 2),
+      const isDuplicate = manifest.some(
+        (m) => m.title.toLowerCase() === defaultTitle.toLowerCase()
       );
 
-      const newEntry: ManifestEntry = {
-        id: newId,
-        title: asset.name.replace(".json", "") || "Imported Set",
-        fileName: fileName,
-        totalWords: parsedData.length,
-        updatedAt: new Date().toISOString(),
-      };
-
-      const updatedManifest = [...manifest, newEntry];
-      await saveManifest(updatedManifest);
-      setManifest(updatedManifest);
-
-      Alert.alert(
-        "Success",
-        `Imported ${parsedData.length} words successfully!`,
-      );
+      if (isDuplicate) {
+        setImportTitle(defaultTitle);
+        setImportFileData(parsedData);
+        setImportModalVisible(true);
+      } else {
+        await executeImport(defaultTitle, parsedData);
+      }
     } catch (error) {
       console.error(error);
       Alert.alert(
@@ -163,6 +153,62 @@ export default function HomeScreen() {
         "There was an error reading the selected file.",
       );
     }
+  };
+
+  const executeImport = async (title: string, data: any[]) => {
+    try {
+      const newId = generateUUID();
+      const fileName = `set_${newId}.json`;
+      const fileUri = `${FileSystem.documentDirectory}${fileName}`;
+
+      // Save imported file
+      await FileSystem.writeAsStringAsync(
+        fileUri,
+        JSON.stringify(data, null, 2),
+      );
+
+      const newEntry: ManifestEntry = {
+        id: newId,
+        title: title.trim(),
+        fileName: fileName,
+        totalWords: data.length,
+        updatedAt: new Date().toISOString(),
+      };
+
+      const updatedManifest = [...manifest, newEntry];
+      await saveManifest(updatedManifest);
+      setManifest(updatedManifest);
+      setImportModalVisible(false);
+      setImportTitle("");
+      setImportFileData(null);
+
+      Alert.alert(
+        "Success",
+        `Imported ${data.length} words successfully!`,
+      );
+    } catch (error) {
+      console.error(error);
+      Alert.alert(
+        "Import Failed",
+        "There was an error saving the imported data.",
+      );
+    }
+  };
+
+  const handleConfirmImport = () => {
+    const trimmed = importTitle.trim();
+    if (!trimmed) {
+      Alert.alert("Error", "Please enter a valid name.");
+      return;
+    }
+    const isDuplicate = manifest.some(
+      (m) => m.title.toLowerCase() === trimmed.toLowerCase()
+    );
+    if (isDuplicate) {
+      Alert.alert("Duplicate Name", "This name already exists. Please choose a different one.");
+      return;
+    }
+    executeImport(trimmed, importFileData);
   };
 
   const getSortedManifest = () => {
@@ -359,6 +405,60 @@ export default function HomeScreen() {
                 onPress={handleCreateSet}
               >
                 <Text style={styles.createBtnText}>Create</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Import Rename Modal */}
+      <Modal visible={isImportModalVisible} transparent animationType="fade">
+        <View style={styles.modalBackground}>
+          <View
+            style={[
+              styles.modalContainer,
+              { backgroundColor: isDark ? "#1a1a1a" : "#fff" },
+            ]}
+          >
+            <ThemedText type="subtitle" style={styles.modalTitle}>
+              Rename Imported Set
+            </ThemedText>
+            <ThemedText style={{ marginBottom: 12, fontSize: 14, opacity: 0.8 }}>
+              A set with this name already exists. Please choose a new name.
+            </ThemedText>
+
+            <TextInput
+              style={[
+                styles.input,
+                {
+                  color: isDark ? "#fff" : "#000",
+                  borderColor: isDark ? "#333" : "#ccc",
+                },
+              ]}
+              placeholder="Imported Set Name"
+              placeholderTextColor={isDark ? "#888" : "#aaa"}
+              value={importTitle}
+              onChangeText={setImportTitle}
+              autoFocus
+            />
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.cancelBtn}
+                onPress={() => {
+                  setImportModalVisible(false);
+                  setImportTitle("");
+                  setImportFileData(null);
+                }}
+              >
+                <Text style={styles.cancelBtnText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.createBtn}
+                onPress={handleConfirmImport}
+              >
+                <Text style={styles.createBtnText}>Import</Text>
               </TouchableOpacity>
             </View>
           </View>

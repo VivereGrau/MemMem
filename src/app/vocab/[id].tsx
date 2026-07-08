@@ -64,6 +64,8 @@ export default function VocabScreen() {
   // Modals state
   const [isModalVisible, setModalVisible] = useState(false);
   const [isCatModalVisible, setCatModalVisible] = useState(false);
+  const [isExportModalVisible, setExportModalVisible] = useState(false);
+  const [exportTitle, setExportTitle] = useState("");
 
   // Word Form State
   const [editingWordId, setEditingWordId] = useState<string | null>(null);
@@ -139,6 +141,40 @@ export default function VocabScreen() {
           });
         } else {
           Animated.spring(catModalY, {
+            toValue: 0,
+            friction: 6,
+            useNativeDriver: false,
+          }).start();
+        }
+      },
+    }),
+  ).current;
+
+  const exportModalY = React.useRef(new Animated.Value(0)).current;
+
+  const exportPanResponder = React.useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (evt, gestureState) => {
+        return gestureState.dy > 8;
+      },
+      onPanResponderMove: (evt, gestureState) => {
+        if (gestureState.dy > 0) {
+          exportModalY.setValue(gestureState.dy);
+        }
+      },
+      onPanResponderRelease: (evt, gestureState) => {
+        if (gestureState.dy > 100 || gestureState.vy > 0.5) {
+          Keyboard.dismiss();
+          Animated.timing(exportModalY, {
+            toValue: 800,
+            duration: 250,
+            useNativeDriver: false,
+          }).start(() => {
+            setExportModalVisible(false);
+            setTimeout(() => exportModalY.setValue(0), 100);
+          });
+        } else {
+          Animated.spring(exportModalY, {
             toValue: 0,
             friction: 6,
             useNativeDriver: false,
@@ -350,20 +386,37 @@ export default function VocabScreen() {
 
   // ====================== UTILS ======================
 
-  const handleExport = async () => {
-    const fileName = `set_${setId}.json`;
-    const uri = `${FileSystem.documentDirectory}${fileName}`;
+  const handleOpenExport = () => {
+    setExportTitle(setTitle);
+    setExportModalVisible(true);
+  };
 
-    const isAvailable = await Sharing.isAvailableAsync();
-    if (!isAvailable) {
-      Alert.alert("Export Failed", "Sharing is not available on your device.");
-      return;
-    }
+  const handleExport = async () => {
+    const trimmedTitle = exportTitle.trim() || setTitle;
+    // Replace spaces with underscores and invalid characters to avoid file path issues
+    const safeTitle = trimmedTitle.replace(/\s+/g, '_').replace(/[\/\\?%*:|"<>]/g, '-').trim();
+    const fileName = safeTitle ? `${safeTitle}.json` : `set_${setId}.json`;
+    
+    const sourceUri = `${FileSystem.documentDirectory}set_${setId}.json`;
+    const tempUri = `${FileSystem.cacheDirectory}${fileName}`;
 
     try {
-      await Sharing.shareAsync(uri, {
+      const isAvailable = await Sharing.isAvailableAsync();
+      if (!isAvailable) {
+        Alert.alert("Export Failed", "Sharing is not available on your device.");
+        return;
+      }
+
+      await FileSystem.copyAsync({
+        from: sourceUri,
+        to: tempUri,
+      });
+
+      setExportModalVisible(false);
+
+      await Sharing.shareAsync(tempUri, {
         mimeType: "application/json",
-        dialogTitle: `Export ${setTitle}`,
+        dialogTitle: `Export ${trimmedTitle}`,
       });
     } catch (error) {
       console.error("Error sharing file", error);
@@ -418,7 +471,7 @@ export default function VocabScreen() {
               />
             </TouchableOpacity>
           )}
-          <TouchableOpacity style={styles.headerBtn} onPress={handleExport}>
+          <TouchableOpacity style={styles.headerBtn} onPress={handleOpenExport}>
             <Ionicons
               name="share-outline"
               size={28}
@@ -859,6 +912,85 @@ export default function VocabScreen() {
                         onPress={handleUpdateCategory}
                       >
                         <Text style={styles.createBtnText}>Save</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </View>
+              </TouchableWithoutFeedback>
+            </Animated.View>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
+      {/* Export Modal */}
+      <Modal
+        visible={isExportModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setExportModalVisible(false)}
+      >
+        <TouchableWithoutFeedback
+          onPress={() => {
+            Keyboard.dismiss();
+            setExportModalVisible(false);
+          }}
+        >
+          <View style={[styles.modalBackground, { justifyContent: "center" }]}>
+            <Animated.View
+              style={[
+                styles.modalContainer,
+                styles.centerModalContainer,
+                { backgroundColor: isDark ? "#1C1C1E" : "#fff" },
+                {
+                  transform: [
+                    {
+                      translateY: exportModalY.interpolate({
+                        inputRange: [0, 800],
+                        outputRange: [0, 800],
+                        extrapolate: "clamp",
+                      }),
+                    },
+                  ],
+                },
+              ]}
+              {...exportPanResponder.panHandlers}
+            >
+              <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                <View>
+                  <ThemedText type="subtitle" style={styles.modalTitle}>
+                    Export File Name
+                  </ThemedText>
+
+                  <View style={{ marginBottom: 24 }}>
+                    <TextInput
+                      style={[
+                        styles.input,
+                        {
+                          color: isDark ? "#fff" : "#000",
+                          borderColor: isDark ? "#333" : "#ccc",
+                          marginBottom: 0,
+                        },
+                      ]}
+                      placeholder="File Name"
+                      placeholderTextColor={isDark ? "#888" : "#aaa"}
+                      value={exportTitle}
+                      onChangeText={setExportTitle}
+                    />
+                  </View>
+
+                  <View style={[styles.modalActions, { justifyContent: "flex-end" }]}>
+                    <View style={{ flexDirection: "row", gap: 12 }}>
+                      <TouchableOpacity
+                        style={styles.cancelBtn}
+                        onPress={() => setExportModalVisible(false)}
+                      >
+                        <Text style={styles.cancelBtnText}>Cancel</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.createBtn}
+                        onPress={handleExport}
+                      >
+                        <Text style={styles.createBtnText}>Export</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
