@@ -270,6 +270,19 @@ export default function VocabScreen() {
     setModalVisible(true);
   };
 
+  const confirmDuplicate = (word: string): Promise<boolean> => {
+    return new Promise((resolve) => {
+      Alert.alert(
+        "Duplicate Found",
+        `The word "${word}" already exists in this set. Do you still want to save it?`,
+        [
+          { text: "Cancel", style: "cancel", onPress: () => resolve(false) },
+          { text: "Yes", onPress: () => resolve(true) }
+        ]
+      );
+    });
+  };
+
   const handleSaveWord = async () => {
     const trimmedWord = word.trim();
     if (!trimmedWord) {
@@ -284,11 +297,8 @@ export default function VocabScreen() {
       if (currentWordInState && currentWordInState.word !== trimmedWord) {
         const isDuplicate = vocabData.some((v) => v.word === trimmedWord);
         if (isDuplicate) {
-          Alert.alert(
-            "Duplicate Found",
-            `The word "${trimmedWord}" already exists in this set.`,
-          );
-          return;
+          const proceed = await confirmDuplicate(trimmedWord);
+          if (!proceed) return;
         }
       }
 
@@ -323,11 +333,8 @@ export default function VocabScreen() {
       // ===== ADD MODE =====
       const isDuplicate = vocabData.some((v) => v.word === trimmedWord);
       if (isDuplicate) {
-        Alert.alert(
-          "Duplicate Found",
-          `The word "${trimmedWord}" already exists in this set.`,
-        );
-        return;
+        const proceed = await confirmDuplicate(trimmedWord);
+        if (!proceed) return;
       }
 
       const newEntry: VocabEntry = {
