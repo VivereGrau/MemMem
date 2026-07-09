@@ -156,8 +156,8 @@ export default function PracticeScreen() {
               { backgroundColor: isDark ? '#1C1C1E' : '#FFF', borderColor: isDark ? '#333' : '#E5E5EA' },
               frontAnimatedStyle,
            ]}>
-             <ThemedText style={styles.kanjiText} type="title" numberOfLines={2} adjustsFontSizeToFit>
-               {currentCard.word}
+             <ThemedText style={styles.kanjiText} numberOfLines={2} adjustsFontSizeToFit>
+               {currentCard.word}{' '}
              </ThemedText>
              <ThemedText style={styles.tapPrompt}>Tap to flip</ThemedText>
            </Animated.View>
@@ -170,14 +170,14 @@ export default function PracticeScreen() {
               backAnimatedStyle,
            ]}>
              {!!currentCard.reading && (
-               <ThemedText style={styles.readingText}>{currentCard.reading}</ThemedText>
+               <ThemedText style={styles.readingText}>{currentCard.reading}{' '}</ThemedText>
              )}
              {!!currentCard.wordType && (
                <View style={[styles.typeBadge, { backgroundColor: isDark ? '#2C2C2E' : '#E5E5EA', marginBottom: 16 }]}>
                  <Text style={[styles.typeBadgeText, { color: isDark ? '#E5E5EA' : '#48484A' }]}>{currentCard.wordType}</Text>
                </View>
              )}
-             <ThemedText style={styles.meaningText} type="subtitle">{currentCard.meaning}</ThemedText>
+             <ThemedText style={styles.meaningText}>{currentCard.meaning}{' '}</ThemedText>
              
              {!!currentCard.source && (
                <View style={styles.sourceBox}>
@@ -262,7 +262,9 @@ const styles = StyleSheet.create({
   },
   kanjiText: {
     fontSize: 56,
-    lineHeight: 72,
+    lineHeight: 80,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
     textAlign: 'center',
     fontWeight: '800',
   },
@@ -283,14 +285,18 @@ const styles = StyleSheet.create({
   },
   readingText: {
     fontSize: 28,
-    lineHeight: 36,
+    lineHeight: 40,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
     color: '#8E8E93',
     marginBottom: 16,
     textAlign: 'center',
   },
   meaningText: {
     fontSize: 32,
-    lineHeight: 42,
+    lineHeight: 56,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
     color: '#0274DF',
     fontWeight: 'bold',
     textAlign: 'center',

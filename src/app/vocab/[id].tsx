@@ -8,8 +8,10 @@ import {
   Animated,
   FlatList,
   Keyboard,
+  KeyboardAvoidingView,
   Modal,
   PanResponder,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -200,6 +202,22 @@ export default function VocabScreen() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  const [androidKeyboardHeight, setAndroidKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    if (Platform.OS !== "android") return;
+    const showSub = Keyboard.addListener("keyboardDidShow", (e) => {
+      setAndroidKeyboardHeight(e.endCoordinates.height);
+    });
+    const hideSub = Keyboard.addListener("keyboardDidHide", () => {
+      setAndroidKeyboardHeight(0);
+    });
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   // ====================== CATEGORY EDIT MODE ======================
 
@@ -611,7 +629,7 @@ export default function VocabScreen() {
             setModalVisible(false);
           }}
         >
-          <View style={styles.modalBackground}>
+          <KeyboardAvoidingView style={styles.modalBackground} behavior={Platform.OS === "ios" ? "padding" : "height"} enabled>
             <Animated.View
               style={[
                 styles.modalContainer,
@@ -641,7 +659,7 @@ export default function VocabScreen() {
 
                   {isViewMode ? (
                     <View style={styles.viewModeContainer}>
-                      <ThemedText style={styles.viewWord}>{word}</ThemedText>
+                      <ThemedText style={styles.viewWord}>{word}{' '}</ThemedText>
 
                       {!!wordType && (
                         <View
@@ -663,12 +681,12 @@ export default function VocabScreen() {
 
                       {!!reading && (
                         <ThemedText style={styles.viewReading}>
-                          {reading}
+                          {reading}{' '}
                         </ThemedText>
                       )}
 
                       <ThemedText style={styles.viewMeaning}>
-                        {meaning}
+                        {meaning}{' '}
                       </ThemedText>
 
                       {!!source && (
@@ -838,7 +856,7 @@ export default function VocabScreen() {
                 </View>
               </TouchableWithoutFeedback>
             </Animated.View>
-          </View>
+          </KeyboardAvoidingView>
         </TouchableWithoutFeedback>
       </Modal>
 
@@ -855,7 +873,7 @@ export default function VocabScreen() {
             setCatModalVisible(false);
           }}
         >
-          <View style={[styles.modalBackground, { justifyContent: "center" }]}>
+          <KeyboardAvoidingView style={styles.modalBackground} behavior={Platform.OS === "ios" ? "padding" : "height"} enabled>
             <Animated.View
               style={[
                 styles.modalContainer,
@@ -930,7 +948,7 @@ export default function VocabScreen() {
                 </View>
               </TouchableWithoutFeedback>
             </Animated.View>
-          </View>
+          </KeyboardAvoidingView>
         </TouchableWithoutFeedback>
       </Modal>
 
@@ -947,7 +965,7 @@ export default function VocabScreen() {
             setExportModalVisible(false);
           }}
         >
-          <View style={[styles.modalBackground, { justifyContent: "center" }]}>
+          <KeyboardAvoidingView style={[styles.modalBackground, { justifyContent: "center" }]} behavior={Platform.OS === "ios" ? "padding" : "height"} enabled>
             <Animated.View
               style={[
                 styles.modalContainer,
@@ -1009,7 +1027,7 @@ export default function VocabScreen() {
                 </View>
               </TouchableWithoutFeedback>
             </Animated.View>
-          </View>
+          </KeyboardAvoidingView>
         </TouchableWithoutFeedback>
       </Modal>
     </SafeAreaView>
@@ -1120,7 +1138,8 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     padding: 24,
-    paddingBottom: 40,
+    paddingBottom: 400,
+    marginBottom: -360,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: -5 },
     shadowOpacity: 0.1,
@@ -1145,6 +1164,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     marginHorizontal: 16,
     paddingBottom: 24,
+    marginBottom: 0,
   },
   sectionLabel: {
     fontSize: 14,
@@ -1235,7 +1255,8 @@ const styles = StyleSheet.create({
   },
   viewWord: {
     fontSize: 40,
-    lineHeight: 52,
+    lineHeight: 60,
+    paddingVertical: 8,
     fontWeight: "800",
     textAlign: "center",
     marginBottom: 12,
@@ -1257,7 +1278,9 @@ const styles = StyleSheet.create({
   },
   viewMeaning: {
     fontSize: 28,
-    lineHeight: 42,
+    lineHeight: 46,
+    paddingVertical: 8,
+    paddingHorizontal: 24,
     fontWeight: "bold",
     color: "#0274DF",
     textAlign: "center",

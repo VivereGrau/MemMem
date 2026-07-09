@@ -29,7 +29,7 @@ export const WordItem = React.memo(function WordItem({ id, word, reading, meanin
       }]}>
       <View style={styles.topRow}>
         <View style={styles.vocabBox}>
-          <ThemedText style={styles.word} type="subtitle">{word}</ThemedText>
+          <ThemedText style={styles.word} type="subtitle">{word}{' '}</ThemedText>
           <View style={styles.readingRow}>
             {!!wordType && (
               <View style={[styles.typeBadge, { backgroundColor: isDark ? '#2C2C2E' : '#E5E5EA' }]}>
@@ -37,7 +37,7 @@ export const WordItem = React.memo(function WordItem({ id, word, reading, meanin
               </View>
             )}
             {!!reading && (
-              <ThemedText style={[styles.reading, { fontWeight: '600' }]} type="default">{reading}</ThemedText>
+              <ThemedText style={[styles.reading, { fontWeight: '600' }]} type="default">{reading}{' '}</ThemedText>
             )}
           </View>
         </View>
@@ -48,7 +48,7 @@ export const WordItem = React.memo(function WordItem({ id, word, reading, meanin
                 <Text style={{ fontSize: 10, color: isDark ? '#E5E5EA' : '#48484A', fontWeight: 'bold' }} numberOfLines={1}>{badgeText}</Text>
               </View>
             )}
-            <ThemedText style={styles.meaning} type="default">{meaning}</ThemedText>
+            <ThemedText style={styles.meaning} type="default">{meaning}{' '}</ThemedText>
           </View>
         </View>
       </View>
@@ -94,7 +94,10 @@ const styles = StyleSheet.create({
   },
   word: {
     fontSize: 24,
+    lineHeight: 36,
     marginBottom: 4,
+    paddingVertical: 6,
+    paddingHorizontal: 16,
   },
   readingRow: {
     flexDirection: 'row',
@@ -112,13 +115,18 @@ const styles = StyleSheet.create({
   },
   reading: {
     fontSize: 16,
+    lineHeight: 24,
     color: '#8E8E93', // standard gray
+    paddingVertical: 4,
   },
   meaning: {
     fontSize: 18,
+    lineHeight: 28,
     textAlign: 'right',
     color: '#0274DF',
     fontWeight: '600',
+    paddingVertical: 4,
+    paddingHorizontal: 16,
   },
   rightSection: {
     flex: 1,
