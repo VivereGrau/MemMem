@@ -94,6 +94,17 @@ export default function PracticeScreen() {
     }
   };
 
+  const handleReset = () => {
+    resetFlip();
+    setCurrentIndex(0);
+    if (isShuffle) {
+      const shuffled = [...originalCards].sort(() => Math.random() - 0.5);
+      setCards(shuffled);
+    } else {
+      setCards([...originalCards]);
+    }
+  };
+
   if (cards.length === 0) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: isDark ? '#000' : '#f5f5f5' }]}>
@@ -142,9 +153,14 @@ export default function PracticeScreen() {
           </ThemedText>
         </View>
 
-        <TouchableOpacity style={styles.headerBtn} onPress={toggleShuffle}>
-          <Ionicons name="shuffle" size={28} color={isShuffle ? '#34C759' : (isDark ? '#666' : '#999')} />
-        </TouchableOpacity>
+        <View style={styles.headerRightActions}>
+          <TouchableOpacity style={styles.headerBtn} onPress={handleReset}>
+            <Ionicons name="refresh" size={28} color={isDark ? '#fff' : '#000'} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.headerBtn} onPress={toggleShuffle}>
+            <Ionicons name="shuffle" size={28} color={isShuffle ? '#34C759' : (isDark ? '#666' : '#999')} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Card Area */}
@@ -188,24 +204,40 @@ export default function PracticeScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Bottom Controls */}
-      <View style={styles.bottomControls}>
-        <TouchableOpacity 
-          style={[styles.navBtn, currentIndex === 0 && styles.navBtnDisabled]} 
-          onPress={handlePrev}
-          disabled={currentIndex === 0}>
-          <Ionicons name="chevron-back" size={24} color={currentIndex === 0 ? (isDark ? '#444' : '#ccc') : '#0274DF'} />
-          <ThemedText style={[styles.navBtnText, currentIndex === 0 && { color: isDark ? '#444' : '#ccc' }]}>Prev</ThemedText>
-        </TouchableOpacity>
+      {/* Side Navigation Edge Buttons */}
+      <TouchableOpacity 
+        style={[
+          styles.sideNavBtn, 
+          styles.leftSideNav,
+          currentIndex === 0 && styles.sideNavDisabled
+        ]} 
+        onPress={handlePrev}
+        disabled={currentIndex === 0}
+        activeOpacity={0.4}
+      >
+        <Ionicons 
+          name="chevron-back" 
+          size={36} 
+          color={currentIndex === 0 ? (isDark ? '#222' : '#E5E5EA') : (isDark ? '#3a96f3' : '#0274DF')} 
+        />
+      </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={[styles.navBtn, currentIndex === cards.length - 1 && styles.navBtnDisabled]} 
-          onPress={handleNext}
-          disabled={currentIndex === cards.length - 1}>
-          <ThemedText style={[styles.navBtnText, currentIndex === cards.length - 1 && { color: isDark ? '#444' : '#ccc' }]}>Next</ThemedText>
-          <Ionicons name="chevron-forward" size={24} color={currentIndex === cards.length - 1 ? (isDark ? '#444' : '#ccc') : '#0274DF'} />
-        </TouchableOpacity>
-      </View>
+      <TouchableOpacity 
+        style={[
+          styles.sideNavBtn, 
+          styles.rightSideNav,
+          currentIndex === cards.length - 1 && styles.sideNavDisabled
+        ]} 
+        onPress={handleNext}
+        disabled={currentIndex === cards.length - 1}
+        activeOpacity={0.4}
+      >
+        <Ionicons 
+          name="chevron-forward" 
+          size={36} 
+          color={currentIndex === cards.length - 1 ? (isDark ? '#222' : '#E5E5EA') : (isDark ? '#3a96f3' : '#0274DF')} 
+        />
+      </TouchableOpacity>
     </SafeAreaView>
   );
 }
@@ -220,6 +252,11 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   headerBtn: { padding: 8 },
+  headerRightActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   progressContainer: {
     backgroundColor: 'rgba(150,150,150,0.2)',
     paddingHorizontal: 16,
@@ -310,28 +347,22 @@ const styles = StyleSheet.create({
     color: '#8E8E93',
     fontSize: 12,
   },
-  bottomControls: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 32,
-    paddingVertical: 24,
-    paddingBottom: 40, // extra padding for bottom safe area on devices without it
-  },
-  navBtn: {
-    flexDirection: 'row',
+  sideNavBtn: {
+    position: 'absolute',
+    top: '30%',
+    bottom: '30%',
+    width: 60,
+    justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(2, 116, 223, 0.1)', // Light blue tint
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 30,
-    gap: 4,
+    zIndex: 10,
   },
-  navBtnDisabled: {
-    backgroundColor: 'transparent',
+  leftSideNav: {
+    left: 0,
   },
-  navBtnText: {
-    color: '#0274DF',
-    fontSize: 18,
-    fontWeight: 'bold',
-  }
+  rightSideNav: {
+    right: 0,
+  },
+  sideNavDisabled: {
+    opacity: 0.4,
+  },
 });

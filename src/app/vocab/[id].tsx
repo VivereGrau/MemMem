@@ -37,6 +37,7 @@ import {
   updateVocabCategory,
   updateVocabWord,
   VocabEntry,
+  decodeFromHex,
 } from "@/utils/storage";
 
 const PART_OF_SPEECH_OPTIONS = [
@@ -54,14 +55,17 @@ const PART_OF_SPEECH_OPTIONS = [
 ];
 
 export default function VocabScreen() {
-  const { id } = useLocalSearchParams();
+  const { id, wordId } = useLocalSearchParams();
   const setId = Array.isArray(id) ? id[0] : id; // Get the id param safely
+  const targetWordId = Array.isArray(wordId) ? wordId[0] : wordId;
   const router = useRouter();
 
   const [vocabData, setVocabData] = useState<VocabEntry[]>([]);
   const [setTitle, setSetTitle] = useState("Vocab Set");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
+
+  const hasAutoOpened = React.useRef(false);
 
   // Modals state
   const [isModalVisible, setModalVisible] = useState(false);
@@ -202,6 +206,16 @@ export default function VocabScreen() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  useEffect(() => {
+    if (targetWordId && vocabData.length > 0 && !hasAutoOpened.current) {
+      const targetWord = vocabData.find((w) => w.id === targetWordId);
+      if (targetWord) {
+        hasAutoOpened.current = true;
+        handleOpenWordDetails(targetWord);
+      }
+    }
+  }, [targetWordId, vocabData]);
 
   const [androidKeyboardHeight, setAndroidKeyboardHeight] = useState(0);
 

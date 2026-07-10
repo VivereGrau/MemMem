@@ -10,3 +10,10 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v57.0.0/ before 
 # React Native Android Modal Keyboard Quirk
 - Transparent `<Modal>` on Android often fails to trigger `keyboardDidShow` properly, and `KeyboardAvoidingView` behaves unpredictably.
 - **Fix modal floating gap (The "Infinite Skirt" Fix)**: When a bottom-sheet modal is pushed up by the keyboard, closing the keyboard might leave a permanent visual gap at the bottom on Android. To visually hide this, extend the modal container's background far below the screen using `paddingBottom: 400` and `marginBottom: -360` (or similar offset). This ensures any gap is colored by the modal's background rather than revealing the transparent backdrop. Always use this pattern for bottom-sheet modals.
+
+# Local Android Build Quirks (Windows)
+- **Signature Conflict**: APKs compiled locally on Windows via `gradlew assembleRelease` are signed with the local debug keystore by default. When installing the local APK over a version built via EAS Cloud, Android will throw a signature mismatch error. **You must uninstall the existing app from the device first** before installing the new local APK.
+
+# Expo Router Parameter Truncation
+- **Android Query Param Bug**: Passing multi-byte characters (e.g., Thai vowel marks, Hiragana, Katakana) as URL parameters in Expo Router can cause string truncation or corruption on Android. It is recommended to avoid passing arbitrary non-ASCII strings in route parameters. If navigation requires highlighting a specific item, pass only its ASCII identifier (`wordId`), let the target screen load in its default state, and auto-trigger the detail view modal.
+

@@ -26,6 +26,7 @@ import {
   ManifestEntry,
   saveManifest,
   VocabEntry,
+  encodeToHex,
 } from "@/utils/storage";
 import { useColorScheme } from "react-native";
 
@@ -50,6 +51,7 @@ export default function HomeScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      setSearchQuery("");
       let isActive = true;
       const fetchManifest = async () => {
         const data = await getManifest();
@@ -178,6 +180,15 @@ export default function HomeScreen() {
       const updatedManifest = [...manifest, newEntry];
       await saveManifest(updatedManifest);
       setManifest(updatedManifest);
+
+      // Sync imported words to the global search state immediately
+      const importedGlobalWords = data.map((w: any) => ({
+        ...w,
+        setId: newId,
+        setTitle: title.trim(),
+      }));
+      setAllWords(prev => [...prev, ...importedGlobalWords]);
+
       setImportModalVisible(false);
       setImportTitle("");
       setImportFileData(null);
@@ -331,7 +342,12 @@ export default function HomeScreen() {
               wordType={item.wordType}
               source={item.source}
               badgeText={item.setTitle}
-              onPress={() => router.push(`/vocab/${item.setId}` as any)}
+              onPress={() => {
+                router.push({
+                  pathname: `/vocab/${item.setId}`,
+                  params: { wordId: item.id }
+                } as any);
+              }}
             />
           )}
           ListEmptyComponent={

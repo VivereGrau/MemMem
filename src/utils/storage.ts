@@ -256,3 +256,25 @@ export async function saveTheme(theme: AppTheme): Promise<void> {
   const uri = `${FileSystem.documentDirectory}theme.json`;
   await FileSystem.writeAsStringAsync(uri, JSON.stringify({ theme }));
 }
+
+/**
+ * Encodes a string to its 4-digit hexadecimal representation.
+ */
+export function encodeToHex(str: string): string {
+  if (!str) return '';
+  return Array.from(str)
+    .map(c => c.charCodeAt(0).toString(16).padStart(4, '0'))
+    .join('');
+}
+
+/**
+ * Decodes a 4-digit hexadecimal representation back to its original string.
+ */
+export function decodeFromHex(hex: string): string {
+  if (!hex) return '';
+  const matches = hex.match(/.{1,4}/g);
+  if (!matches) return '';
+  return matches
+    .map(val => String.fromCharCode(parseInt(val, 16)))
+    .join('');
+}
