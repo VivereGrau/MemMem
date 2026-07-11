@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { StyleSheet, View, TouchableOpacity, Alert, Animated, Text } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, Alert, Animated, Text, ScrollView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -185,21 +185,27 @@ export default function PracticeScreen() {
               { backgroundColor: isDark ? '#1C1C1E' : '#FFF', borderColor: isDark ? '#333' : '#E5E5EA' },
               backAnimatedStyle,
            ]}>
-             {!!currentCard.reading && (
-               <ThemedText style={styles.readingText}>{currentCard.reading}{' '}</ThemedText>
-             )}
-             {!!currentCard.wordType && (
-               <View style={[styles.typeBadge, { backgroundColor: isDark ? '#2C2C2E' : '#E5E5EA', marginBottom: 16 }]}>
-                 <Text style={[styles.typeBadgeText, { color: isDark ? '#E5E5EA' : '#48484A' }]}>{currentCard.wordType}</Text>
-               </View>
-             )}
-             <ThemedText style={styles.meaningText}>{currentCard.meaning}{' '}</ThemedText>
-             
-             {!!currentCard.source && (
-               <View style={styles.sourceBox}>
-                 <ThemedText style={styles.sourceText}>Note: {currentCard.source}</ThemedText>
-               </View>
-             )}
+             <ScrollView 
+               style={styles.cardBackScrollWrapper}
+               contentContainerStyle={styles.cardBackScroll}
+               showsVerticalScrollIndicator={false}
+             >
+               {!!currentCard.reading && (
+                 <ThemedText style={styles.readingText}>{currentCard.reading}{' '}</ThemedText>
+               )}
+               {!!currentCard.wordType && (
+                 <View style={[styles.typeBadge, { backgroundColor: isDark ? '#2C2C2E' : '#E5E5EA', marginBottom: 16 }]}>
+                   <Text style={[styles.typeBadgeText, { color: isDark ? '#E5E5EA' : '#48484A' }]}>{currentCard.wordType}</Text>
+                 </View>
+               )}
+               <ThemedText style={styles.meaningText}>{currentCard.meaning}{' '}</ThemedText>
+               
+               {!!currentCard.source && (
+                 <View style={[styles.sourceBox, { backgroundColor: isDark ? '#2C2C2E' : '#F2F2F7', borderLeftColor: isDark ? '#0A84FF' : '#007AFF' }]}>
+                   <ThemedText style={styles.sourceText}>Note: {currentCard.source}{' '}</ThemedText>
+                 </View>
+               )}
+             </ScrollView>
            </Animated.View>
         </TouchableOpacity>
       </View>
@@ -296,6 +302,18 @@ const styles = StyleSheet.create({
   cardBack: {
     position: 'absolute',
     top: 0,
+    padding: 0,
+  },
+  cardBackScrollWrapper: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 22,
+  },
+  cardBackScroll: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
   },
   kanjiText: {
     fontSize: 56,
@@ -339,13 +357,16 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   sourceBox: {
-    position: 'absolute',
-    bottom: 24,
-    paddingHorizontal: 20,
+    marginTop: 24,
+    padding: 16,
+    borderRadius: 12,
+    borderLeftWidth: 4,
+    width: '100%',
   },
   sourceText: {
     color: '#8E8E93',
-    fontSize: 12,
+    fontSize: 14,
+    lineHeight: 22,
   },
   sideNavBtn: {
     position: 'absolute',
