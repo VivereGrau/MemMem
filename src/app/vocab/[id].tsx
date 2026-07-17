@@ -20,6 +20,7 @@ import {
   TouchableWithoutFeedback,
   useColorScheme,
   View,
+  Switch,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -71,6 +72,9 @@ export default function VocabScreen() {
   const [isModalVisible, setModalVisible] = useState(false);
   const [isCatModalVisible, setCatModalVisible] = useState(false);
   const [isExportModalVisible, setExportModalVisible] = useState(false);
+  const [isPlayModalVisible, setPlayModalVisible] = useState(false);
+  const [selectedPlayMode, setSelectedPlayMode] = useState<"normal" | "ox">("normal");
+  const [isPlayShuffleEnabled, setPlayShuffleEnabled] = useState(false);
   const [exportTitle, setExportTitle] = useState("");
 
   // Word Form State
@@ -181,6 +185,39 @@ export default function VocabScreen() {
           });
         } else {
           Animated.spring(exportModalY, {
+            toValue: 0,
+            friction: 6,
+            useNativeDriver: false,
+          }).start();
+        }
+      },
+    }),
+  ).current;
+
+  const playModalY = React.useRef(new Animated.Value(0)).current;
+
+  const playPanResponder = React.useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (evt, gestureState) => {
+        return gestureState.dy > 8;
+      },
+      onPanResponderMove: (evt, gestureState) => {
+        if (gestureState.dy > 0) {
+          playModalY.setValue(gestureState.dy);
+        }
+      },
+      onPanResponderRelease: (evt, gestureState) => {
+        if (gestureState.dy > 100 || gestureState.vy > 0.5) {
+          Animated.timing(playModalY, {
+            toValue: 800,
+            duration: 250,
+            useNativeDriver: false,
+          }).start(() => {
+            setPlayModalVisible(false);
+            setTimeout(() => playModalY.setValue(0), 100);
+          });
+        } else {
+          Animated.spring(playModalY, {
             toValue: 0,
             friction: 6,
             useNativeDriver: false,
@@ -425,6 +462,27 @@ export default function VocabScreen() {
 
   // ====================== UTILS ======================
 
+  const handleOpenPlayModal = () => {
+    setSelectedPlayMode("normal");
+    setPlayShuffleEnabled(false);
+    setPlayModalVisible(true);
+  };
+
+  const handleStartPlay = () => {
+    setPlayModalVisible(false);
+    if (selectedPlayMode === "normal") {
+      router.push({
+        pathname: `/vocab/practice`,
+        params: { setId: setId, shuffle: isPlayShuffleEnabled ? "true" : "false" }
+      } as any);
+    } else {
+      router.push({
+        pathname: `/vocab/ox-practice`,
+        params: { setId: setId, shuffle: isPlayShuffleEnabled ? "true" : "false" }
+      } as any);
+    }
+  };
+
   const handleOpenExport = () => {
     setExportTitle(setTitle);
     setExportModalVisible(true);
@@ -512,9 +570,7 @@ export default function VocabScreen() {
           {vocabData.length > 0 && (
             <TouchableOpacity
               style={styles.headerBtn}
-              onPress={() =>
-                router.push(`/vocab/practice?setId=${setId}` as any)
-              }
+              onPress={handleOpenPlayModal}
             >
               <Ionicons
                 name="play-circle-outline"
@@ -1044,6 +1100,128 @@ export default function VocabScreen() {
           </KeyboardAvoidingView>
         </TouchableWithoutFeedback>
       </Modal>
+
+      {/* Play Mode Selection Modal */}
+      <Modal
+        visible={isPlayModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPlayModalVisible(false)}
+      >
+        <TouchableWithoutFeedback
+          onPress={() => {
+            setPlayModalVisible(false);
+          }}
+        >
+          <KeyboardAvoidingView style={styles.modalBackground} behavior={Platform.OS === "ios" ? "padding" : "height"} enabled>
+            <Animated.View
+              style={[
+                styles.modalContainer,
+                { backgroundColor: isDark ? "#1C1C1E" : "#fff" },
+                {
+                  transform: [
+                    {
+                      translateY: playModalY.interpolate({
+                        inputRange: [0, 800],
+                        outputRange: [0, 800],
+                        extrapolate: "clamp",
+                      }),
+                    },
+                  ],
+                },
+              ]}
+              {...playPanResponder.panHandlers}
+            >
+              <TouchableWithoutFeedback onPress={() => {}}>
+                <View>
+                  <View style={styles.dragHandle} />
+                  <ThemedText type="subtitle" style={styles.modalTitle}>
+                    เริ่มทบทวนคำศัพท์
+                  </ThemedText>
+
+                  {/* Mode Option Cards */}
+                  <View style={styles.modeContainer}>
+                    <TouchableOpacity
+                      style={[
+                        styles.modeOption,
+                        { borderColor: isDark ? "#333" : "#E5E5EA" },
+                        selectedPlayMode === "normal" && { borderColor: "#007AFF", backgroundColor: isDark ? "rgba(10,132,255,0.1)" : "rgba(0,122,255,0.05)" }
+                      ]}
+                      onPress={() => setSelectedPlayMode("normal")}
+                    >
+                      <View style={styles.modeOptionHeader}>
+                        <Ionicons
+                          name="albums-outline"
+                          size={24}
+                          color={selectedPlayMode === "normal" ? (isDark ? "#0A84FF" : "#007AFF") : "#8E8E93"}
+                        />
+                        <ThemedText style={[styles.modeOptionTitle, selectedPlayMode === "normal" && { color: isDark ? "#0A84FF" : "#007AFF" }]}>
+                          โหมดการ์ดปกติ
+                        </ThemedText>
+                      </View>
+                      <Text style={[styles.modeOptionDesc, { color: isDark ? "#8E8E93" : "#636366" }]}>
+                        แตะเพื่อพลิกดูคำแปล และกดที่ปุ่มขอบซ้าย/ขวาเพื่อเปลี่ยนการ์ด
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[
+                        styles.modeOption,
+                        { borderColor: isDark ? "#333" : "#E5E5EA" },
+                        selectedPlayMode === "ox" && { borderColor: "#34C759", backgroundColor: isDark ? "rgba(52,199,89,0.1)" : "rgba(52,199,89,0.05)" }
+                      ]}
+                      onPress={() => setSelectedPlayMode("ox")}
+                    >
+                      <View style={styles.modeOptionHeader}>
+                        <Ionicons
+                          name="checkmark-circle-outline"
+                          size={24}
+                          color={selectedPlayMode === "ox" ? "#34C759" : "#8E8E93"}
+                        />
+                        <ThemedText style={[styles.modeOptionTitle, selectedPlayMode === "ox" && { color: "#34C759" }]}>
+                          โหมดทดสอบ O/X
+                        </ThemedText>
+                      </View>
+                      <Text style={[styles.modeOptionDesc, { color: isDark ? "#8E8E93" : "#636366" }]}>
+                        ประเมินความจำด้วยปุ่มจำได้ (O) หรือจำไม่ได้ (X) โดยคำศัพท์ที่ลืมจะวนกลับมาให้ตอบซ้ำ
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Shuffle Toggle */}
+                  <View style={[styles.toggleRow, { borderColor: isDark ? "#2C2C2E" : "#E5E5EA" }]}>
+                    <View style={styles.toggleRowLeft}>
+                      <Ionicons
+                        name="shuffle"
+                        size={22}
+                        color={isDark ? "#FFF" : "#000"}
+                      />
+                      <ThemedText style={styles.toggleRowLabel}>สับคำศัพท์ (Shuffle)</ThemedText>
+                    </View>
+                    <Switch
+                      value={isPlayShuffleEnabled}
+                      onValueChange={setPlayShuffleEnabled}
+                      trackColor={{ false: "#767577", true: "#34C759" }}
+                      thumbColor={Platform.OS === "ios" ? undefined : "#f4f3f4"}
+                    />
+                  </View>
+
+                  {/* Start Button */}
+                  <TouchableOpacity
+                    style={[
+                      styles.startPlayBtn,
+                      { backgroundColor: selectedPlayMode === "ox" ? "#34C759" : (isDark ? "#0A84FF" : "#007AFF") }
+                    ]}
+                    onPress={handleStartPlay}
+                  >
+                    <Text style={styles.startPlayBtnText}>เริ่มเล่น</Text>
+                  </TouchableOpacity>
+                </View>
+              </TouchableWithoutFeedback>
+            </Animated.View>
+          </KeyboardAvoidingView>
+        </TouchableWithoutFeedback>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -1310,5 +1488,57 @@ const styles = StyleSheet.create({
   viewSourceText: {
     color: "#8E8E93",
     fontSize: 14,
+  },
+  modeContainer: {
+    gap: 12,
+    marginBottom: 20,
+  },
+  modeOption: {
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 2,
+  },
+  modeOptionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 6,
+  },
+  modeOptionTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  modeOptionDesc: {
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: 4,
+  },
+  toggleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    marginBottom: 24,
+  },
+  toggleRowLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  toggleRowLabel: {
+    fontSize: 15,
+  },
+  startPlayBtn: {
+    paddingVertical: 16,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  startPlayBtnText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
   },
 });

@@ -9,15 +9,16 @@ import { getVocabSet, VocabEntry, getManifest } from '@/utils/storage';
 import { ThemedText } from '@/components/themed-text';
 
 export default function PracticeScreen() {
-  const { setId } = useLocalSearchParams();
+  const { setId, shuffle } = useLocalSearchParams();
   const parsedSetId = Array.isArray(setId) ? setId[0] : setId;
+  const initialShuffle = (Array.isArray(shuffle) ? shuffle[0] : shuffle) === 'true';
   const router = useRouter();
 
   const [cards, setCards] = useState<VocabEntry[]>([]);
   const [originalCards, setOriginalCards] = useState<VocabEntry[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
-  const [isShuffle, setIsShuffle] = useState(false);
+  const [isShuffle, setIsShuffle] = useState(initialShuffle);
   const [setTitle, setSetTitle] = useState('Practice');
 
   const scheme = useColorScheme();
@@ -36,7 +37,12 @@ export default function PracticeScreen() {
         const data = await getVocabSet(setInfo.fileName);
         if (mounted) {
           setOriginalCards(data);
-          setCards(data); // initially ordered
+          if (initialShuffle) {
+            const shuffled = [...data].sort(() => Math.random() - 0.5);
+            setCards(shuffled);
+          } else {
+            setCards(data);
+          }
         }
       } else {
         Alert.alert('Error', 'Set not found!');

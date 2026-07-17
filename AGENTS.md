@@ -16,4 +16,10 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v57.0.0/ before 
 
 # Expo Router Parameter Truncation
 - **Android Query Param Bug**: Passing multi-byte characters (e.g., Thai vowel marks, Hiragana, Katakana) as URL parameters in Expo Router can cause string truncation or corruption on Android. It is recommended to avoid passing arbitrary non-ASCII strings in route parameters. If navigation requires highlighting a specific item, pass only its ASCII identifier (`wordId`), let the target screen load in its default state, and auto-trigger the detail view modal.
+# Swipe-to-Dismiss Bottom Sheet Modals
+- Bottom sheet modals (like Word details, category edit, export, and mode selector) use custom swipe-to-dismiss gesture configurations.
+- **Pattern**: Initialize a `PanResponder` tracking the drag gesture `dy` and animate an `Animated.Value` (`modalY`) mapped to the translateY transform. Set `onMoveShouldSetPanResponder` to return `gestureState.dy > 8` so that vertical drag gestures trigger the dismissal, and on release animate the dismissal if `dy > 100` or `vy > 0.5`.
 
+# Flashcard / Game Mode Routing Architecture
+- Keep custom practice/learning loops modular. Instead of mixing distinct game loops with complex layout states (e.g., standard next/prev flashcard navigation vs. O/X Leitner-style active-recall loops), implement them in separate screen routes (e.g., `practice.tsx` and `ox-practice.tsx`).
+- Pass parameters such as `setId` and `shuffle` as clean URL/query parameters in `router.push`. When passing boolean flags like `shuffle`, format them as `"true"` or `"false"` to match string parsing in `useLocalSearchParams()`.
